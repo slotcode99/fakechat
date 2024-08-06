@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake Chat App</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1c2833;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #chat-container {
+            width: 400px;
+            height: 600px;
+            border: 1px solid #2c3e50;
+            border-radius: 10px;
+            background-color: #34495e;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #header {
+            padding: 10px;
+            background-color: #ecf0f1;
+            color: #1c2833;
+            text-align: center;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #header .avatar {
+            margin-bottom: 5px;
+        }
+        #messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-top: 1px solid #2c3e50;
+            border-bottom: 1px solid #2c3e50;
+            background-color: #5d6d7e;
+        }
+        .message {
+            margin: 10px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.left {
+            justify-content: flex-start;
+        }
+        .message.right {
+            justify-content: flex-end;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #1f618d;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .message .text {
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 60%;
+            word-wrap: break-word;
+            position: relative;
+        }
+        .message.right .text {
+            background-color: #2980b9;
+            color: white;
+        }
+        #input-container {
+            display: flex;
+            padding: 10px;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            background-color: #2c3e50;
+        }
+        #name {
+            width: 25%;
+            padding: 5px;
+            margin-right: 5px;
+            border: 1px solid #2c3e50;
+            border-radius: 5px;
+            background-color: #34495e;
+            color: white;
+        }
+        #message {
+            width: 50%;
+            padding: 5px;
+            margin-right: 5px;
+            border: 1px solid #2c3e50;
+            border-radius: 5px;
+            background-color: #34495e;
+            color: white;
+        }
+        #send, #attach, #add-name {
+            width: 20%;
+            padding: 5px;
+            background-color: #1f618d;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #send:hover, #attach:hover, #add-name:hover {
+            background-color: #154360;
+        }
+        #file-input {
+            display: none;
+        }
+        #name-selector {
+            margin-right: 5px;
+            background-color: #34495e;
+            color: white;
+            border: 1px solid #2c3e50;
+            border-radius: 5px;
+        }
+        ::placeholder {
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="header">
+            <div class="avatar" id="header-avatar"></div>
+            <span id="header-name"></span>
+        </div>
+        <div id="messages"></div>
+        <div id="input-container">
+            <input type="text" id="name" placeholder="Your name">
+            <button id="add-name">Add Name</button>
+            <select id="name-selector">
+                <option value="" disabled selected>Select Name</option>
+            </select>
+            <input type="text" id="message" placeholder="Type a message">
+            <button id="attach">Attach</button>
+            <input type="file" id="file-input" accept="image/*">
+            <button id="send">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const nameInput = document.getElementById('name');
+        const messageInput = document.getElementById('message');
+        const messagesContainer = document.getElementById('messages');
+        const sendButton = document.getElementById('send');
+        const attachButton = document.getElementById('attach');
+        const fileInput = document.getElementById('file-input');
+        const addNameButton = document.getElementById('add-name');
+        const nameSelector = document.getElementById('name-selector');
+        const headerAvatar = document.getElementById('header-avatar');
+        const headerName = document.getElementById('header-name');
+
+        const users = [];
+        let currentUser = '';
+
+        sendButton.addEventListener('click', sendMessage);
+        attachButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', sendImage);
+        addNameButton.addEventListener('click', addName);
+        nameSelector.addEventListener('change', () => {
+            currentUser = nameSelector.value;
+            updateHeader();
+        });
+
+        function addName() {
+            const name = nameInput.value.trim();
+            if (name && !users.includes(name)) {
+                users.push(name);
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                nameSelector.appendChild(option);
+                if (users.length > 1) {
+                    nameSelector.style.display = 'inline';
+                }
+                nameInput.value = '';
+            }
+        }
+
+        function updateHeader() {
+            if (users.length === 2) {
+                const otherUser = users.find(user => user !== currentUser);
+                headerAvatar.textContent = otherUser.charAt(0).toUpperCase();
+                headerName.textContent = otherUser;
+            }
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+
+            if (currentUser && message) {
+                displayMessage(currentUser, message, 'text');
+                messageInput.value = '';
+            }
+        }
+
+        function sendImage() {
+            const file = fileInput.files[0];
+
+            if (currentUser && file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    displayMessage(currentUser, e.target.result, 'image');
+                };
+                reader.readAsDataURL(file);
+                fileInput.value = '';
+            }
+        }
+
+        function displayMessage(name, content, type) {
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('message');
+            messageContainer.classList.add(name === users[0] ? 'left' : 'right');
+
+            const avatar = document.createElement('div');
+            avatar.classList.add('avatar');
+            avatar.textContent = name.charAt(0).toUpperCase();
+
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('text');
+
+            if (type === 'text') {
+                messageContent.textContent = content;
+            } else if (type === 'image') {
+                const img = document.createElement('img');
+                img.src = content;
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '10px';
+                messageContent.appendChild(img);
+            }
+
+            messageContainer.appendChild(avatar);
+            messageContainer.appendChild(messageContent);
+            messagesContainer.appendChild(messageContainer);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
