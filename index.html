@@ -204,6 +204,32 @@
         ::placeholder {
             color: #bdc3c7;
         }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            #main-container {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+            #chat-list-header, #chat-container-header {
+                font-size: 1em;
+            }
+            .chat-item {
+                padding: 5px;
+            }
+            .chat-item .avatar {
+                width: 30px;
+                height: 30px;
+                margin-right: 5px;
+            }
+            .message .text {
+                font-size: 0.9em;
+            }
+            #name, #message, #send, #attach, #add-name, #name-selector {
+                font-size: 0.9em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -253,21 +279,9 @@
         const newChatButton = document.getElementById('new-chat');
         const backButton = document.getElementById('back-button');
 
-        const users = [];
-        const chats = [];
-        let currentUser = '';
-
-        newChatButton.addEventListener('click', () => {
-            nameInput.value = '';
-            nameSelector.style.display = 'none';
-            messageInput.value = '';
-            messagesContainer.innerHTML = '';
-            switchToChatContainer();
-        });
-
-        backButton.addEventListener('click', () => {
-            switchToChatList();
-        });
+        let users = [];
+        let currentUser = null;
+        let chats = [];
 
         sendButton.addEventListener('click', sendMessage);
         attachButton.addEventListener('click', () => fileInput.click());
@@ -277,6 +291,8 @@
             currentUser = event.target.value;
             updateHeader();
         });
+        newChatButton.addEventListener('click', startNewChat);
+        backButton.addEventListener('click', switchToChatList);
 
         function addName() {
             const name = nameInput.value.trim();
@@ -420,6 +436,13 @@
         function switchToChatList() {
             chatContainer.classList.remove('active');
             chatList.classList.add('active');
+        }
+
+        function startNewChat() {
+            nameSelector.value = '';
+            currentUser = null;
+            updateHeader();
+            switchToChatContainer();
         }
     </script>
 </body>
