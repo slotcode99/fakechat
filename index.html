@@ -14,7 +14,7 @@
             margin: 0;
             font-family: Arial, sans-serif;
         }
-        #chat-container {
+        #main-container {
             width: 400px;
             height: 600px;
             border: 1px solid #2c3e50;
@@ -24,7 +24,15 @@
             flex-direction: column;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        #header {
+        #chat-list, #chat-container {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        #chat-list.active, #chat-container.active {
+            display: flex;
+        }
+        #chat-list-header, #chat-container-header {
             padding: 10px;
             background-color: #ecf0f1;
             color: #1c2833;
@@ -34,11 +42,68 @@
             font-size: 1.2em;
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            justify-content: space-between;
         }
-        #header .avatar {
-            margin-bottom: 5px;
+        #chat-container-header {
+            justify-content: space-between;
+        }
+        #chat-list-header h2, #chat-container-header span {
+            margin: 0;
+        }
+        #chat-list-header button, #back-button {
+            padding: 5px;
+            background-color: #1f618d;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #chat-list-header button:hover, #back-button:hover {
+            background-color: #154360;
+        }
+        #chat-items {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #5d6d7e;
+        }
+        .chat-item {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid #2c3e50;
+            background-color: #34495e;
+        }
+        .chat-item:hover {
+            background-color: #1c2833;
+        }
+        .chat-item .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: #1f618d;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        .chat-item .avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .chat-item .details {
+            flex: 1;
+        }
+        .chat-item .details .name {
+            font-weight: bold;
+            color: white;
+        }
+        .chat-item .details .last-message {
+            color: #bdc3c7;
         }
         #messages {
             flex: 1;
@@ -142,22 +207,32 @@
     </style>
 </head>
 <body>
-    <div id="chat-container">
-        <div id="header">
-            <div class="avatar" id="header-avatar"></div>
-            <span id="header-name"></span>
+    <div id="main-container">
+        <div id="chat-list" class="active">
+            <div id="chat-list-header">
+                <h2>Chats</h2>
+                <button id="new-chat">New Chat</button>
+            </div>
+            <div id="chat-items"></div>
         </div>
-        <div id="messages"></div>
-        <div id="input-container">
-            <input type="text" id="name" placeholder="Your name">
-            <button id="add-name">Add Name</button>
-            <select id="name-selector">
-                <option value="" disabled selected>Select Name</option>
-            </select>
-            <input type="text" id="message" placeholder="Type a message">
-            <button id="attach">Attach</button>
-            <input type="file" id="file-input" accept="image/*">
-            <button id="send">Send</button>
+        <div id="chat-container">
+            <div id="chat-container-header">
+                <button id="back-button">&#x2190;</button>
+                <div class="avatar" id="header-avatar"></div>
+                <span id="header-name"></span>
+            </div>
+            <div id="messages"></div>
+            <div id="input-container">
+                <input type="text" id="name" placeholder="Your name">
+                <button id="add-name">Add Name</button>
+                <select id="name-selector">
+                    <option value="" disabled selected>Select Name</option>
+                </select>
+                <input type="text" id="message" placeholder="Type a message">
+                <button id="attach">Attach</button>
+                <input type="file" id="file-input" accept="image/*">
+                <button id="send">Send</button>
+            </div>
         </div>
     </div>
 
@@ -172,16 +247,34 @@
         const nameSelector = document.getElementById('name-selector');
         const headerAvatar = document.getElementById('header-avatar');
         const headerName = document.getElementById('header-name');
+        const chatList = document.getElementById('chat-list');
+        const chatContainer = document.getElementById('chat-container');
+        const chatItems = document.getElementById('chat-items');
+        const newChatButton = document.getElementById('new-chat');
+        const backButton = document.getElementById('back-button');
 
         const users = [];
+        const chats = [];
         let currentUser = '';
+
+        newChatButton.addEventListener('click', () => {
+            nameInput.value = '';
+            nameSelector.style.display = 'none';
+            messageInput.value = '';
+            messagesContainer.innerHTML = '';
+            switchToChatContainer();
+        });
+
+        backButton.addEventListener('click', () => {
+            switchToChatList();
+        });
 
         sendButton.addEventListener('click', sendMessage);
         attachButton.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', sendImage);
         addNameButton.addEventListener('click', addName);
-        nameSelector.addEventListener('change', () => {
-            currentUser = nameSelector.value;
+        nameSelector.addEventListener('change', (event) => {
+            currentUser = event.target.value;
             updateHeader();
         });
 
@@ -214,6 +307,7 @@
             if (currentUser && message) {
                 displayMessage(currentUser, message, 'text');
                 messageInput.value = '';
+                updateChatList();
             }
         }
 
@@ -227,6 +321,7 @@
                 };
                 reader.readAsDataURL(file);
                 fileInput.value = '';
+                updateChatList();
             }
         }
 
@@ -256,6 +351,75 @@
             messageContainer.appendChild(messageContent);
             messagesContainer.appendChild(messageContainer);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function updateChatList() {
+            if (!currentUser) return;
+
+            const chatIndex = chats.findIndex(chat => chat.users.includes(currentUser));
+            if (chatIndex !== -1) {
+                const chat = chats[chatIndex];
+                chat.lastMessage = messageInput.value.trim() || 'Image';
+            } else {
+                const newChat = {
+                    users: users.slice(),
+                    lastMessage: messageInput.value.trim() || 'Image'
+                };
+                chats.push(newChat);
+            }
+
+            renderChatList();
+        }
+
+        function renderChatList() {
+            chatItems.innerHTML = '';
+            chats.forEach(chat => {
+                const otherUser = chat.users.find(user => user !== currentUser);
+
+                const chatItem = document.createElement('div');
+                chatItem.classList.add('chat-item');
+                chatItem.addEventListener('click', () => openChat(chat.users));
+
+                const avatar = document.createElement('div');
+                avatar.classList.add('avatar');
+                avatar.textContent = otherUser.charAt(0).toUpperCase();
+
+                const details = document.createElement('div');
+                details.classList.add('details');
+
+                const name = document.createElement('div');
+                name.classList.add('name');
+                name.textContent = otherUser;
+
+                const lastMessage = document.createElement('div');
+                lastMessage.classList.add('last-message');
+                lastMessage.textContent = chat.lastMessage;
+
+                details.appendChild(name);
+                details.appendChild(lastMessage);
+
+                chatItem.appendChild(avatar);
+                chatItem.appendChild(details);
+
+                chatItems.appendChild(chatItem);
+            });
+        }
+
+        function openChat(users) {
+            currentUser = users.find(user => user !== currentUser);
+            nameSelector.value = currentUser;
+            updateHeader();
+            switchToChatContainer();
+        }
+
+        function switchToChatContainer() {
+            chatList.classList.remove('active');
+            chatContainer.classList.add('active');
+        }
+
+        function switchToChatList() {
+            chatContainer.classList.remove('active');
+            chatList.classList.add('active');
         }
     </script>
 </body>
